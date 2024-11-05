@@ -33,7 +33,6 @@ class Encoder(nn.Module):
         convRelu(6)
         convRelu(7)
         convRelu(8)
-        # cnn.add_module('pooling{0}'.format(2), nn.MaxPool2d(2, 2))  # 128*25*5
 
         self.cnn = cnn
 
@@ -84,9 +83,7 @@ class Attention(nn.Module):
         x0 = self.atten_0(conv_out)
         x1 = self.atten_1(x0)
 
-        channel = x1.size(1)
-        height = x1.size(2)
-        width = x1.size(3)
+        channel, height, width = x1.size(1), x1.size(2), x1.size(3)
         fc_x = x1.view(batch_size, channel, -1)
 
         fc_atten = self.atten_fc2(self.atten_fc1(fc_x))
@@ -96,15 +93,15 @@ class Attention(nn.Module):
         score = self.bn1(score + self.cnn_1_1(x0))
         atten = self.sigmoid(self.deconv2(score))
 
-        atten_list = torch.chunk(atten, self.K, 1)
+        # atten_list = torch.chunk(atten, self.K, 1)
         atten = atten.reshape(batch_size, self.K, -1)
-        conv_out = conv_out.reshape(conv_out.size(0), conv_out.size(1), -1)
 
+        conv_out = conv_out.reshape(conv_out.size(0), conv_out.size(1), -1)
         conv_out = conv_out.permute(0,2,1)
 
         atten_out = torch.bmm(atten, conv_out)
         atten_out = atten_out.view(batch_size, self.K, -1)
-        return atten_list, atten_out
+        return atten_out
 
 
 class Decoder(nn.Module):
@@ -115,8 +112,7 @@ class Decoder(nn.Module):
         self.fc = nn.Linear(self.input_dim, self.nclass)
 
     def forward(self, input):
-        preds = self.fc(input)
-        return preds
+        return self.fc(input)
 
 
 class LPR_model(nn.Module):
@@ -129,9 +125,8 @@ class LPR_model(nn.Module):
 
     def forward(self, input):
         conv_out = self.encoder(input)
-        atten_list, atten_out = self.attention(conv_out)
+        atten_out = self.attention(conv_out)
         preds = self.decoder(atten_out)
-        # return atten_out, preds
         return preds
 
 
@@ -144,7 +139,7 @@ if __name__ == "__main__":
     from thop import profile
     flops, params = profile(model, inputs=(inputs,))
     # M flops and M params
-    print(flops / 1e6, params / 1e6)
+    print("\33[31m Flops: %.2f M, params: %.2f M\33[0m" % (flops / 1e6, params / 1e6))
     quit()
 
     # print(atten_out.size())
@@ -154,7 +149,7 @@ if __name__ == "__main__":
     torch.onnx.export(
         model,
         inputs,
-        "salpr.onnx",
+        "tmp_salpr.onnx",
         export_params=True,
         opset_version=11,
         input_names=["input"],

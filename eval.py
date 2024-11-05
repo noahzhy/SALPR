@@ -3,6 +3,7 @@ from pathlib import Path
 
 import yaml
 import torch
+import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
@@ -30,6 +31,17 @@ model = LPR_model(1, 68, 96, 32, 8).cuda()
 model.load_state_dict(torch.load('/workspace/checkpoints/model_85_acc_0.9954.pth', weights_only=True))
 model.eval()
 
+
+# random pick one image from test dataset to test
+def test_model(model, image_path):
+    image = Image.open(image_path).convert('L')
+    image = image.resize((96, 32))
+    image = torch.from_numpy(np.array(image) / 255.).unsqueeze(0).unsqueeze(0).float().cuda()
+    output = model(image)
+    pred = torch.argmax(output, dim=-1).squeeze(0).cpu().numpy()
+    return pred
+
+
 # fn to eval pred and labels
 def eval_model(model, loader):
     with torch.no_grad():
@@ -48,6 +60,11 @@ def eval_model(model, loader):
         )
     return acc
 
-acc = eval_model(model, test_loader)
-print(f'Accuracy: {acc.item():.4f}')
+# acc = eval_model(model, test_loader)
+# print(f'Accuracy: {acc.item():.4f}')
 
+img_paths = glob.glob('/workspace/datasets/lpr/images/val/*.jpg')
+img_path = random.choice(img_paths)
+
+print(img_path)
+print(test_model(model, img_path))
