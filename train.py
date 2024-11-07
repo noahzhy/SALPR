@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader, Dataset
 from PIL import Image, ImageDraw, ImageFont
 from tqdm import tqdm
 
+from new_model.torch_model import TinyLPR
 from model import LPR_model
 from dataloader import LPRDataset
 
@@ -21,7 +22,8 @@ bs = cfg['batch_size']
 print(cfg)
 
 
-model = LPR_model(1, 68, 96, 32, 8).cuda()
+# model = LPR_model(1, 68, 96, 32, 8).cuda()
+model = TinyLPR().cuda()
 optimizer = optim.NAdam(model.parameters(), lr=cfg['lr'])
 
 
@@ -81,7 +83,6 @@ for epoch in range(1, num_epochs+1):
             # data to cuda
             inputs = inputs.cuda()
             labels = labels.cuda()
-
             acc.append(eval_model(model, inputs, labels))
 
         acc = torch.tensor(acc).mean()

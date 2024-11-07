@@ -1,5 +1,5 @@
 model_name: 'SALPR'
-lr: 2.0e-3
+lr: 1.5e-3
 batch_size: &bs 128
 epochs: 100
 eval_freq: 5

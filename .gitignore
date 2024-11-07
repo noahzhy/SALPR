@@ -3,6 +3,6 @@ backup/*
 datasets/*
 data/*.zip
 .DS_Store
-*/*.pyc
+*.pyc
 tmp_*
 *.log

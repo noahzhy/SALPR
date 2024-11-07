@@ -12,6 +12,8 @@ from tqdm import tqdm
 
 from model import LPR_model
 from dataloader import LPRDataset
+from new_model.torch_model import TinyLPR
+
 
 # load config
 cfg = yaml.load(open('config.yaml', 'r'), Loader=yaml.FullLoader)
@@ -23,12 +25,11 @@ print(cfg)
 test_dataset = LPRDataset(**cfg['test'])
 test_loader = DataLoader(test_dataset, batch_size=bs, shuffle=False)
 
-
-model = LPR_model(1, 68, 96, 32, 8).cuda()
+# model = LPR_model(1, 68, 96, 32, 8).cuda()
+model = TinyLPR().cuda()
 
 # load model from checkpoint given by path
-# model = torch.load('backup/model_50_acc_0.9945.pth', map_location=torch.device('cuda:0'))
-model.load_state_dict(torch.load('/workspace/checkpoints/model_85_acc_0.9954.pth', weights_only=True))
+model.load_state_dict(torch.load('checkpoints/model_100_acc_0.9909.pth', weights_only=True))
 model.eval()
 
 
@@ -60,11 +61,11 @@ def eval_model(model, loader):
         )
     return acc
 
-# acc = eval_model(model, test_loader)
-# print(f'Accuracy: {acc.item():.4f}')
+acc = eval_model(model, test_loader)
+print(f'Accuracy: {acc.item():.4f}')
 
-img_paths = glob.glob('/workspace/datasets/lpr/images/val/*.jpg')
-img_path = random.choice(img_paths)
+# img_paths = glob.glob('/workspace/datasets/lpr/images/val/*.jpg')
+# img_path = random.choice(img_paths)
 
-print(img_path)
-print(test_model(model, img_path))
+# print(img_path)
+# print(test_model(model, img_path))
