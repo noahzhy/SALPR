@@ -29,7 +29,7 @@ test_loader = DataLoader(test_dataset, batch_size=bs, shuffle=False)
 model = TinyLPR().cuda()
 
 # load model from checkpoint given by path
-model.load_state_dict(torch.load('checkpoints/model_100_acc_0.9909.pth', weights_only=True))
+model.load_state_dict(torch.load('checkpoints/model_60_acc_0.9889.pth', weights_only=True))
 model.eval()
 
 

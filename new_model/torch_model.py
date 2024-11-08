@@ -99,52 +99,51 @@ class UniversalInvertedBottleneck(nn.Module):
 
 
 class MobileNetV4(nn.Module):
-    def __init__(self, block_specs, num_classes=1000):
+    def __init__(self, cin=1,cout=128):
         super(MobileNetV4, self).__init__()
 
-        c = 1
-        layers = []
-        for block_type, *block_cfg in block_specs:
-            if block_type == 'conv_bn':
-                block = ConvBN
-                k, s, f = block_cfg
-                layers.append(block(c, f, k, s))
-            elif block_type == 'uib':
-                block = UniversalInvertedBottleneck
-                start_k, middle_k, s, f, e = block_cfg
-                layers.append(block(c, f, e, start_k, middle_k, s))
-            else:
-                raise NotImplementedError
-            c = f
-        self.features = nn.Sequential(*layers)
+        block_specs = [
+            # conv_bn, kernel_size, stride, out_channels
+            # uib, start_ks, middle_ks, stride, out_channels, expand_ratio
+            # stage 1
+            ('conv_bn', 3, 1, 24),
+            ('conv_bn', 3, 2, 64),
+            ('conv_bn', 1, 1, 32),
+            #
+            ('uib', 5, 5, 2, 64, 3.0),  # ExtraDW
+            ('uib', 0, 3, 1, 64, 2.0),  # IB
+            ('uib', 0, 3, 1, 64, 2.0),  # IB
+            ('uib', 3, 0, 1, 64, 4.0),  # ConvNext
+            #
+            ('uib', 3, 3, 2, 96, 6.0),  # ExtraDW
+            ('uib', 0, 5, 1, 96, 3.0),  # IB
+            ('conv_bn', 1, 1, cout),  # Conv
+        ]
+
+        self.stage1 = nn.Sequential(
+            ConvBN(cin, 24, 3, 1),
+            ConvBN(24, 64, 3, 2),
+            ConvBN(64, 32, 1, 1),
+        )
+
+        self.stage2 = nn.Sequential(
+            UniversalInvertedBottleneck(32, 64, 3.0, 5, 5, 2),
+            UniversalInvertedBottleneck(64, 64, 2.0, 0, 3, 1),
+            UniversalInvertedBottleneck(64, 64, 2.0, 0, 3, 1),
+            UniversalInvertedBottleneck(64, 64, 4.0, 3, 0, 1),
+        )
+
+        self.stage3 = nn.Sequential(
+            UniversalInvertedBottleneck(64, 96, 6.0, 3, 3, 2),
+            UniversalInvertedBottleneck(96, 96, 3.0, 0, 5, 1),
+            ConvBN(96, cout, 1, 1),
+        )
 
     def forward(self, x):
-        x = self.features(x)
-        return x
-
-
-def mobilenetv4_small(**kwargs):
-    """
-    Constructs a MobileNetV4-Small model
-    """
-    block_specs = [
-        # conv_bn, kernel_size, stride, out_channels
-        # uib, start_dw_kernel_size, middle_dw_kernel_size, stride, out_channels, expand_ratio
-        #
-        ('conv_bn', 3, 1, 24),
-        ('conv_bn', 3, 2, 64),
-        ('conv_bn', 1, 1, 32),
-        #
-        ('uib', 5, 5, 2, 64, 3.0),  # ExtraDW
-        ('uib', 0, 3, 1, 64, 2.0),  # IB
-        ('uib', 0, 3, 1, 64, 2.0),  # IB
-        ('uib', 3, 0, 1, 64, 4.0),  # ConvNext
-        #
-        ('uib', 3, 3, 2, 96, 6.0),  # ExtraDW
-        ('uib', 0, 5, 1, 96, 3.0),  # IB
-        ('conv_bn', 1, 1, 128),  # Conv
-    ]
-    return MobileNetV4(block_specs, **kwargs)
+        s1 = self.stage1(x)
+        s2 = self.stage2(s1)
+        s3 = self.stage3(s2)
+        return s1, s2, s3
 
 
 class Attention(nn.Module):
@@ -167,7 +166,8 @@ class Attention(nn.Module):
         self.up1 = nn.Sequential(
             # nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True),
             nn.Conv2d(channels, temporal, 1, 1, 0),
-            nn.Sigmoid()
+            nn.Softmax(dim=1)
+            # nn.Sigmoid()
         )
 
     def forward(self, inputs):
@@ -190,26 +190,25 @@ class TinyLPR(nn.Module):
         self.n_class = n_class
         self.n_feat = n_feat
 
-        self.backbone = mobilenetv4_small()
+        self.backbone = MobileNetV4(1, n_feat)
         self.attention = Attention(n_feat, T)
-        self.out = nn.Linear(128, n_class)
+        self.out = nn.Linear(n_feat, n_class)
+
+        # self.conv1 = nn.Sequential(
+        #     nn.Conv2d(64, n_feat, 1, 1, 0),
+        # )
 
     def forward(self, x):
-        bb = self.backbone(x)
-        bs, c, h, w = bb.size()
+        _, s2, s3 = self.backbone(x)
+        bs, c, h, w = s3.size()
 
-        attn = self.attention(bb)
+        attn = self.attention(s3)
         attn = attn.reshape(bs, self.T, -1)
 
-        bb = bb.reshape(bs, c, -1).permute(0, 2, 1)
-        # print("bb", bb.size())
-
-        attn_out = torch.bmm(attn, bb)
-        attn_out = attn_out.view(bs, self.T, -1)
-        out = self.out(attn_out)
-        return out
-        # return bb
-
+        # shortcut = self.conv1(s2)
+        shortcut = s3.reshape(bs, c, -1).permute(0, 2, 1)
+        attn_out = torch.bmm(attn, shortcut).view(bs, self.T, -1)
+        return self.out(attn_out)
 
 
 if __name__ == '__main__':

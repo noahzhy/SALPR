@@ -21,11 +21,18 @@ eval_freq = cfg['eval_freq']
 bs = cfg['batch_size']
 print(cfg)
 
+train_dataset = LPRDataset(**cfg['train'])
+train_loader = DataLoader(train_dataset, batch_size=bs, shuffle=True)
+
+val_dataset = LPRDataset(**cfg['val'])
+val_loader = DataLoader(val_dataset, batch_size=bs, shuffle=False)
 
 # model = LPR_model(1, 68, 96, 32, 8).cuda()
 model = TinyLPR().cuda()
-optimizer = optim.NAdam(model.parameters(), lr=cfg['lr'])
+# laod model from checkpoint given by path
+model.load_state_dict(torch.load(cfg['checkpoint_path'], weights_only=True))
 
+optimizer = optim.NAdam(model.parameters(), lr=cfg['lr'])
 
 # fn to eval pred and labels
 def eval_model(model, data, labels):
@@ -52,13 +59,6 @@ class Losses(nn.Module):
         preds = preds.reshape(-1, preds.size(-1))
         labels = labels.reshape(-1)
         return nn.CrossEntropyLoss()(preds, labels)
-
-
-train_dataset = LPRDataset(**cfg['train'])
-train_loader = DataLoader(train_dataset, batch_size=bs, shuffle=True)
-
-val_dataset = LPRDataset(**cfg['val'])
-val_loader = DataLoader(val_dataset, batch_size=bs, shuffle=False)
 
 
 for epoch in range(1, num_epochs+1):
@@ -89,18 +89,3 @@ for epoch in range(1, num_epochs+1):
         Path('checkpoints/').mkdir(parents=True, exist_ok=True)
         print(f'\33[1;32mEpoch [{epoch}/{num_epochs}], Accuracy: {acc.item():.4f}\33[0m')
         torch.save(model.state_dict(), f'checkpoints/model_{epoch}_acc_{acc.item():.4f}.pth')
-
-
-# # load pth
-# model.load_state_dict(torch.load('model.pth', weights_only=True))
-# model.eval()
-
-# # test image
-# img = Image.open(test_img_path).convert('L').resize((96, 32))
-# data = torch.tensor((img.getdata()), dtype=torch.float32).reshape(
-#     1, 1, 32, 96) / 255.0
-
-# # inference
-# outputs = model(data)
-# preds = torch.argmax(outputs, dim=-1)
-# print(preds)

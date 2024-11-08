@@ -11,6 +11,8 @@ num_classes: &nc 68
 img_size: [32, 96]
 input_shape: [32, 96, 1]
 
+checkpoint_path: "checkpoints/model_60_acc_0.9889.pth"
+
 # data config
 train:
   maxT: *ts

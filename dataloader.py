@@ -8,7 +8,7 @@ from PIL import Image
 
 # load the image size config from the config file via yaml
 cfg = yaml.load(open('config.yaml', 'r'), Loader=yaml.FullLoader)
-print(cfg)
+# print(cfg)
 
 
 def load_label(txt_path):
@@ -60,7 +60,8 @@ class LPRDataset(Dataset):
         txt_name = img_name.replace('images', 'labels').replace('.jpg', '.txt')
         labs = load_label(txt_name)
         # add 0 to the label if the label is less than maxT
-        labels[:len(labs)] = torch.tensor([int(lab) for lab in labs])
+        # labels[:len(labs)] = torch.tensor([int(lab) for lab in labs])
+        labels[self.maxT - len(labs):] = torch.tensor([int(lab) for lab in labs])
 
         if self.data_aug: image = self.transform(image)
 
@@ -71,11 +72,12 @@ dataset = LPRDataset(image_dir='datasets/lpr/images/val', data_aug=True)
 dataloader = DataLoader(dataset, batch_size=2, shuffle=True)
 
 
-from matplotlib import pyplot as plt
+if __name__ == '__main__':
+    from matplotlib import pyplot as plt
 
-# Example usage
-for images, labels in dataloader:
-    print(images.shape, labels)
-    plt.imshow(images[0].permute(1, 2, 0))
-    plt.savefig('test.png')
-    break
+    # Example usage
+    for images, labels in dataloader:
+        print(images.shape, labels)
+        plt.imshow(images[0].permute(1, 2, 0))
+        plt.savefig('test.png')
+        break
