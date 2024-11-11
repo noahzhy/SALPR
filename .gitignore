@@ -1,0 +1,8 @@
+checkpoints/*
+backup/*
+datasets/*
+data/*.zip
+.DS_Store
+*.pyc
+tmp_*
+*.log

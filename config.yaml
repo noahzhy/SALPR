@@ -1,0 +1,30 @@
+model_name: 'SALPR'
+lr: 1.5e-3
+batch_size: &bs 128
+epochs: 100
+eval_freq: 5
+
+time_steps: &ts 8
+blank_id: &bi 0
+num_classes: &nc 68
+
+img_size: [32, 96]
+input_shape: [32, 96, 1]
+
+checkpoint_path: "backup/lighter_9895.pth"
+
+# data config
+train:
+  maxT: *ts
+  image_dir: /workspace/datasets/lpr/images/train
+  data_aug: True
+
+val:
+  maxT: *ts
+  image_dir: /workspace/datasets/lpr/images/val
+  data_aug: False
+
+test:
+  maxT: *ts
+  image_dir: /workspace/datasets/lpr/images/test
+  data_aug: False
