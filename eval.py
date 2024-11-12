@@ -26,7 +26,7 @@ test_loader = DataLoader(test_dataset, batch_size=bs, shuffle=False)
 # model = LPR_model(1, 68, 96, 32, 8).cuda()
 model = TinyLPR().cuda()
 # load model from checkpoint given by path
-model.load_state_dict(torch.load('backup/lighter_acc_0.9911.pth', weights_only=True))
+model.load_state_dict(torch.load('backup/model_100_acc_0.9915.pth', weights_only=True))
 model.eval()
 
 # export model to onnx

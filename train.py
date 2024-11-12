@@ -3,6 +3,7 @@ from pathlib import Path
 
 import yaml
 import torch
+torch.backends.cudnn.benchmark = True
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
@@ -19,17 +20,18 @@ cfg = yaml.load(open('config.yaml', 'r'), Loader=yaml.FullLoader)
 num_epochs = cfg['epochs']
 eval_freq = cfg['eval_freq']
 bs = cfg['batch_size']
+seed = cfg['seed']
 print(cfg)
 
-train_dataset = LPRDataset(**cfg['train'])
-train_loader = DataLoader(train_dataset, batch_size=bs, shuffle=True)
+# set seed
+torch.manual_seed(seed)
+torch.cuda.manual_seed(seed)
 
-val_dataset = LPRDataset(**cfg['val'])
-val_loader = DataLoader(val_dataset, batch_size=bs, shuffle=False)
+train_loader = DataLoader(LPRDataset(**cfg['train']), batch_size=bs, shuffle=True)
+val_loader = DataLoader(LPRDataset(**cfg['val']), batch_size=bs, shuffle=False)
 
 # model = LPR_model(1, 68, 96, 32, 8).cuda()
 model = TinyLPR().cuda()
-# laod model from checkpoint given by path
 model.load_state_dict(torch.load(cfg['checkpoint_path'], weights_only=True))
 
 optimizer = optim.NAdam(model.parameters(), lr=cfg['lr'])

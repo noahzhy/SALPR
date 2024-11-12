@@ -112,11 +112,10 @@ class MobileNetV4(nn.Module):
             #
             ('uib', 5, 5, 2, 48, 3.0),  # ExtraDW
             ('uib', 0, 3, 1, 48, 2.0),  # IB
-            ('uib', 0, 3, 1, 48, 2.0),  # IB
             ('uib', 3, 0, 1, 48, 4.0),  # ConvNext
             #
             ('uib', 3, 3, 2, 64, 4.0),  # ExtraDW
-            ('uib', 0, 5, 1, 64, 3.0),  # IB
+            ('uib', 0, 3, 1, 64, 3.0),  # IB
             ('conv_bn', 1, 1, cout),  # Conv
         ]
 
@@ -127,15 +126,14 @@ class MobileNetV4(nn.Module):
         )
 
         self.stage2 = nn.Sequential(
-            UniversalInvertedBottleneck(32, 48, 3.0, 5, 3, 2),
-            UniversalInvertedBottleneck(48, 48, 2.0, 3, 3, 1),
-            UniversalInvertedBottleneck(48, 48, 2.0, 3, 0, 1),
-            UniversalInvertedBottleneck(48, 48, 4.0, 0, 3, 1),
+            UniversalInvertedBottleneck(32, 48, 3.0, 5, 5, 2),
+            UniversalInvertedBottleneck(48, 48, 2.0, 0, 3, 1),
+            UniversalInvertedBottleneck(48, 48, 4.0, 3, 0, 1),
         )
 
         self.stage3 = nn.Sequential(
             UniversalInvertedBottleneck(48, 64, 4.0, 3, 3, 2),
-            UniversalInvertedBottleneck(64, 64, 3.0, 0, 5, 1),
+            UniversalInvertedBottleneck(64, 64, 3.0, 0, 3, 1),
             ConvBN(64, cout, 1, 1),
         )
 
@@ -209,26 +207,27 @@ class TinyLPR(nn.Module):
         shortcut = shortcut.reshape(bs, c, -1).permute(0, 2, 1)
         attn_out = torch.bmm(attn, shortcut).view(bs, self.T, -1)
         out = self.out(attn_out)
-        return nn.LogSoftmax(dim=2)(out)
+        # return nn.LogSoftmax(dim=2)(out)
         return out
 
 
 if __name__ == '__main__':
     model = TinyLPR()
-    print(model)
     x = torch.randn(1, 1, 32, 96)
     y = model(x)
     print(y.size())
 
-    # load pretrained model
-    model.load_state_dict(torch.load('backup/lighter_acc_0.9911.pth', weights_only=True, map_location='cpu'))
-    model.eval()
+    # count number of parameters and flops
+    from thop import profile
+    macs, params = profile(model, inputs=(x,), verbose=False)
+    print('MACs: {} MFLOPs'.format(macs / 1e6))
+    print('Params: {} M'.format(params / 1e6))
 
-    # quit()
-
-    # export model as onnx
+    ## export model as onnx
     # import torch.onnx as onnx
 
+    # model.load_state_dict(torch.load('backup/lighter_acc_0.9911.pth', weights_only=True, map_location='cpu'))
+    # model.eval()
     # torch.onnx.export(model, x,
     #     "mobilenetv4_small.onnx",
     #     verbose=False,
@@ -237,29 +236,10 @@ if __name__ == '__main__':
     #     opset_version=11,
     # )
 
-    # # count number of parameters and flops
-    # from thop import profile
-    # macs, params = profile(model, inputs=(x,))
-    # print('MACs: {} MFLOPs'.format(macs / 1e6))
-    # print('Params: {} M'.format(params / 1e6))
-
-    # import onnxruntime as ort
-    # import onnxoptimizer
     # import onnx
+    # from onnxsim import simplify
 
-    # model = onnx.load('mobilenetv4_small.onnx')
-    # model = onnxoptimizer.optimize(model, "optimized.onnx")
-    import onnx
-    from onnxsim import simplify
-
-    # 加载预定义的 ONNX 模型
-    model = onnx.load('model.onnx')
-
-    # 简化模型
-    model_simp, check = simplify(model)
-
-    # 确保简化后的模型有效
-    assert check, "Simplified ONNX model could not be validated"
-
-    # 保存简化后的模型
-    onnx.save(model_simp, 'simplified_model.onnx')
+    # model = onnx.load('model.onnx')
+    # model_simp, check = simplify(model)
+    # assert check, "Simplified ONNX model could not be validated"
+    # onnx.save(model_simp, 'simplified_model.onnx')
