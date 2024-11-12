@@ -6,7 +6,7 @@ Attention: 2D attention
 
 | Backbone | Attention | Flops | Params | Inference Time | Accuracy |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| MobileNetV4-Small | - | 27.8 MFLOPs | 0.124 M | 0.83 ms | -% |
-| MobileNetV4-Small | 2D attention | 29.6 MFLOPs | 0.185 M | 0.848 ms | -% |
+| MobileNetV4-Small | - | 25.47 MFLOPs | 0.110 M | 0.83 ms | -% |
+| MobileNetV4-Small | 2D attention | 27.32 MFLOPs | 0.172 M | 0.848 ms | -% |
 
-Thus, the parameters are increased by 48.1% and the flops are increased by 6.5%.# SALPR
+Thus, the parameters are increased 56.36% and the flops are increased 7.27%.

@@ -216,30 +216,13 @@ if __name__ == '__main__':
     x = torch.randn(1, 1, 32, 96)
     y = model(x)
     print(y.size())
+    
+    import sys
+    sys.path.append('/Users/haoyu/Documents/Projects/SALPR/utils')
 
-    # count number of parameters and flops
-    from thop import profile
-    macs, params = profile(model, inputs=(x,), verbose=False)
-    print('MACs: {} MFLOPs'.format(macs / 1e6))
-    print('Params: {} M'.format(params / 1e6))
+    from tools import *
 
-    ## export model as onnx
-    # import torch.onnx as onnx
-
-    # model.load_state_dict(torch.load('backup/lighter_acc_0.9911.pth', weights_only=True, map_location='cpu'))
-    # model.eval()
-    # torch.onnx.export(model, x,
-    #     "mobilenetv4_small.onnx",
-    #     verbose=False,
-    #     input_names=["input"],
-    #     output_names=["output"],
-    #     opset_version=11,
-    # )
-
-    # import onnx
-    # from onnxsim import simplify
-
-    # model = onnx.load('model.onnx')
-    # model_simp, check = simplify(model)
-    # assert check, "Simplified ONNX model could not be validated"
-    # onnx.save(model_simp, 'simplified_model.onnx')
+    inputs_shape = (1, 1, 32, 96)
+    model.load_state_dict(torch.load('backup/m_size_0.9915.pth', weights_only=True, map_location='cpu'))
+    count_parameters(model, inputs_shape)
+    export2onnx(model, inputs_shape, 'tmp_model.onnx')
