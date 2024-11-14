@@ -42,8 +42,8 @@ def test_onnx_model_speed(model_path, input_shape, warm_up=100, test=1000):
 
 
 if __name__ == '__main__':
-    test_onnx_model_speed('model.onnx', (1, 1, 32, 96))
+    test_onnx_model_speed('tmp_model.onnx', (1, 1, 32, 96))
 
     img_path = random.choice(glob.glob('images/*.jpg'))
-    res = inference_onnx_model('model.onnx', img_path)
+    res = inference_onnx_model('tmp_model.onnx', img_path)
     print(img_path, res)

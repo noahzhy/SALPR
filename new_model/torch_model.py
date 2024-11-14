@@ -149,23 +149,23 @@ class Attention(nn.Module):
         super(Attention, self).__init__()
         self.temporal = temporal
         self.cba = nn.Sequential(
-            nn.Conv2d(channels, channels, 3, 2, 1, bias=False),
+            nn.LazyConv2d(channels, 3, 1, 1, bias=False),
             nn.BatchNorm2d(channels),
             nn.ReLU(inplace=True),
+            nn.MaxPool2d(2, 2),
         )
         self.ll = nn.Sequential(
-            nn.Linear(12, 12),
-            nn.Linear(12, 12),
+            nn.LazyLinear(12),
+            nn.LazyLinear(12),
         )
         self.up0 = nn.Sequential(
-            nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True),
-            nn.Conv2d(channels, channels, 1, 1, 0),
+            nn.LazyConvTranspose2d(channels, kernel_size=3, stride=2, padding=1, dilation=1, output_padding=1),
         )
         self.up1 = nn.Sequential(
-            nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True),
-            nn.Conv2d(channels, temporal, 1, 1, 0),
+            nn.LazyConvTranspose2d(temporal, kernel_size=3, stride=2, padding=1, dilation=1, output_padding=1),
             nn.Softmax(dim=1)
         )
+        self.bn = nn.BatchNorm2d(channels)
 
     def forward(self, inputs):
         x = self.cba(inputs)
@@ -176,7 +176,7 @@ class Attention(nn.Module):
         x = x.view(bs, c, h, w)
 
         x = self.up0(x) + inputs
-        x = self.up1(x)
+        x = self.up1(self.bn(x))
         return x
 
 
@@ -213,16 +213,17 @@ class TinyLPR(nn.Module):
 
 if __name__ == '__main__':
     model = TinyLPR()
-    x = torch.randn(1, 1, 32, 96)
+    inputs_shape = (1, 1, 32, 96)
+    x = torch.randn(inputs_shape)
     y = model(x)
     print(y.size())
-    
+
     import sys
     sys.path.append('/Users/haoyu/Documents/Projects/SALPR/utils')
 
     from tools import *
 
-    inputs_shape = (1, 1, 32, 96)
-    model.load_state_dict(torch.load('backup/m_size_0.9915.pth', weights_only=True, map_location='cpu'))
     count_parameters(model, inputs_shape)
-    export2onnx(model, inputs_shape, 'tmp_model.onnx')
+
+    # model.load_state_dict(torch.load('backup/m_size_0.9915.pth', weights_only=True, map_location='cpu'))
+    # export2onnx(model, inputs_shape, 'tmp_model.onnx')
