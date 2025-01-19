@@ -149,20 +149,22 @@ class Attention(nn.Module):
         super(Attention, self).__init__()
         self.temporal = temporal
         self.cba = nn.Sequential(
-            nn.LazyConv2d(channels, 3, 1, 1, bias=False),
+            nn.Conv2d(channels, channels, 3, 2, 1, bias=False),
             nn.BatchNorm2d(channels),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(2, 2),
         )
         self.ll = nn.Sequential(
-            nn.LazyLinear(12),
-            nn.LazyLinear(12),
+            nn.Linear(12, 12),
+            nn.Linear(12, 12),
         )
         self.up0 = nn.Sequential(
-            nn.LazyConvTranspose2d(channels, kernel_size=3, stride=2, padding=1, dilation=1, output_padding=1),
+            nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True),
+            nn.Conv2d(channels, channels, 1, 1, 0),
+            nn.ReLU(inplace=True),
         )
         self.up1 = nn.Sequential(
-            nn.LazyConvTranspose2d(temporal, kernel_size=3, stride=2, padding=1, dilation=1, output_padding=1),
+            nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True),
+            nn.Conv2d(channels, temporal, 1, 1, 0),
             nn.Softmax(dim=1)
         )
         self.bn = nn.BatchNorm2d(channels)
@@ -219,11 +221,12 @@ if __name__ == '__main__':
     print(y.size())
 
     import sys
-    sys.path.append('/Users/haoyu/Documents/Projects/SALPR/utils')
+    sys.path.append('utils')
 
     from tools import *
 
     count_parameters(model, inputs_shape)
 
-    # model.load_state_dict(torch.load('backup/m_size_0.9915.pth', weights_only=True, map_location='cpu'))
+    # model.load_state_dict(torch.load('backup/m_size_0.9919.pth', weights_only=True, map_location='cpu'))
     # export2onnx(model, inputs_shape, 'tmp_model.onnx')
+    # simplify_onnx('tmp_model.onnx', 'tmp_model_simplified.onnx')

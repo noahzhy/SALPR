@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from PIL import Image
 from tqdm import tqdm
 
-from model import LPR_model
+# from model import LPR_model
 from dataloader import LPRDataset
 from new_model.torch_model import TinyLPR
 
@@ -23,10 +23,8 @@ print(cfg)
 test_dataset = LPRDataset(**cfg['test'])
 test_loader = DataLoader(test_dataset, batch_size=bs, shuffle=False)
 
-# model = LPR_model(1, 68, 96, 32, 8).cuda()
 model = TinyLPR().cuda()
-# load model from checkpoint given by path
-model.load_state_dict(torch.load('backup/model_100_acc_0.9915.pth', weights_only=True))
+model.load_state_dict(torch.load('backup/m_size_0.9919.pth', weights_only=True))
 model.eval()
 
 # export model to onnx

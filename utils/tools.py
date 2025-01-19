@@ -8,8 +8,11 @@ from onnxsim import simplify
 def count_parameters(model, input_size=(1, 3, 224, 224)):
     x = torch.randn(input_size)
     macs, params = profile(model, inputs=(x,), verbose=False)
-    print('MACs: {} MFLOPs'.format(macs / 1e6))
-    print('Params: {} M'.format(params / 1e6))
+    if macs > 1000:
+        print('MACs: {} GLOPs'.format(round(macs / 1e9, 4)))
+    else:
+        print('MACs: {} MLOPs'.format(round(macs / 1e6, 4)))
+    print('Params: {} M'.format(round(params / 1e6, 4)))
 
 
 def export2onnx(model, input_size=(1, 3, 224, 224), model_name="mobilenetv4_small.onnx"):
@@ -20,7 +23,7 @@ def export2onnx(model, input_size=(1, 3, 224, 224), model_name="mobilenetv4_smal
         verbose=False,
         input_names=["input"],
         output_names=["output"],
-        opset_version=11,
+        # opset_version=11,
     )
 
 
