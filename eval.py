@@ -1,6 +1,7 @@
 import os, sys, random, time, glob, math
 from pathlib import Path
 
+import onnx
 import yaml
 import torch
 import numpy as np
@@ -25,15 +26,13 @@ model = TinyLPR(log_output=True).to(device)
 model.load_state_dict(torch.load('weights/m_size_0.9919.pth', weights_only=True, map_location=device))
 model.eval()
 
-# export model to onnx
-import onnx
-
 dummy_input = torch.randn(1, 1, 32, 96).to(device)
 torch.onnx.export(model, dummy_input,
     "model.onnx",
     verbose=False,
     input_names=['input'],
-    output_names=['output']
+    output_names=['output'],
+    opset_version=20,
 )
 
 exit(-1)
