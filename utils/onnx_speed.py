@@ -16,34 +16,56 @@ def inference_onnx_model(model_path, img_path):
     output_name = session.get_outputs()[0].name
     # Run the model
     output = session.run([output_name], {input_name: img})
-    return np.argmax(output[0], axis=2)
+    conf = np.max(output[0], axis=2).squeeze()
+    res = np.argmax(output[0], axis=2).squeeze()
+    return res, conf
 
 
-# Load the ONNX model
-def test_onnx_model_speed(model_path, input_shape, warm_up=100, test=1000):
-    session = ort.InferenceSession(model_path)
+def test_onnx_model_speed(model_path, input_shape, warm_up=100, test=1000, force_cpu=True):
+    # Set ONNX Runtime options for better performance
+    options = ort.SessionOptions()
+    options.intra_op_num_threads = os.cpu_count()
+    options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
 
-    # Generate random input data
+    # ort devices check
+    print(f'Available devices: {ort.get_device()}')
+
+    # Create session with optimized options
+    provider_options = ['CPUExecutionProvider'] if force_cpu else ['CUDAExecutionProvider']
+    # check providers
+    print(f'Available providers: {provider_options}')
+    session = ort.InferenceSession(model_path, options, providers=provider_options)
+    
+    # Pre-allocate input data array
     input_name = session.get_inputs()[0].name
-    input_data = np.random.random(input_shape).astype(np.float32)
     output_name = session.get_outputs()[0].name
+    input_data = np.random.random(input_shape).astype(np.float32)
 
-    # Warm up and measure the time for 1000 iterations
-    start_time = 0
-    for i in range(warm_up + test):
-        if i == warm_up - 1:
-            start_time = perf_counter()
+    # Warm up phase
+    for _ in range(warm_up):
         session.run([output_name], {input_name: input_data})
-    end_time = perf_counter()
 
-    # Calculate and print the average time (ms) for each iteration
-    average_time = (end_time - start_time) * 1000 / test
-    print(f'Average time: {average_time} ms')
+    # Test phase with timing
+    times = []
+    for _ in range(test):
+        start = perf_counter()
+        session.run([output_name], {input_name: input_data})
+        times.append(perf_counter() - start)
+
+    # Calculate statistics
+    # sort the times and remove the first 10% and last 10% of the times
+    times = np.sort(times)[int(test * 0.1):int(test * 0.9)]
+    average_time = np.mean(times)
+    print(f'Average time: {average_time * 1000:.2f} ms')
+    print(f'Min time: {min(times)*1000:.2f} ms')
+    print(f'Max time: {max(times)*1000:.2f} ms')
 
 
 if __name__ == '__main__':
-    test_onnx_model_speed('tmp_model.onnx', (1, 1, 32, 96))
+    model_path = 'onnx/model_sim.onnx'
 
-    img_path = random.choice(glob.glob('images/*.jpg'))
-    res = inference_onnx_model('tmp_model.onnx', img_path)
-    print(img_path, res)
+    test_onnx_model_speed(model_path, (1, 1, 32, 96))
+
+    img_path = random.choice(glob.glob('data/*.jpg'))
+    res, conf = inference_onnx_model(model_path, img_path)
+    print(img_path, res, conf)

@@ -183,11 +183,12 @@ class Attention(nn.Module):
 
 
 class TinyLPR(nn.Module):
-    def __init__(self, T=8, n_class=68, n_feat=72):
+    def __init__(self, T=8, n_class=68, n_feat=72, log_output=False):
         super(TinyLPR, self).__init__()
         self.T = T
         self.n_class = n_class
         self.n_feat = n_feat
+        self.log_output = log_output
 
         self.backbone = MobileNetV4(1, n_feat)
         self.attention = Attention(n_feat, T)
@@ -209,7 +210,10 @@ class TinyLPR(nn.Module):
         shortcut = shortcut.reshape(bs, c, -1).permute(0, 2, 1)
         attn_out = torch.bmm(attn, shortcut).view(bs, self.T, -1)
         out = self.out(attn_out)
-        # return nn.LogSoftmax(dim=2)(out)
+
+        if self.log_output:
+            return nn.Softmax(dim=2)(out)
+
         return out
 
 

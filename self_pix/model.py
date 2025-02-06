@@ -33,8 +33,8 @@ def LazyConvBN(out_channels, kernel_size=(3, 3), stride=(1, 1), padding='same'):
 class Encoder(nn.Module):
     def __init__(self, nc=1):
         super(Encoder, self).__init__()
-        self.cnn = mobilenetv4_small()
-        # self.cnn = mobilenetv4_medium()
+        # self.cnn = mobilenetv4_small()
+        self.cnn = mobilenetv4_medium()
         # self.cnn = mobilenetv4_large()
 
     def forward(self, input):
@@ -47,8 +47,8 @@ class Attention(nn.Module):
         super(Attention, self).__init__()
         self.K = K
 
-        nm = [128, 64]
-        # nm = [256, 128]
+        # nm = [128, 64]
+        nm = [256, 128]
         # nm = [512, 192]
         self.atten_0 = nn.Sequential(
             ConvBN(nc, nm[0], 3, 1, 1),
@@ -232,7 +232,7 @@ class LPR_model(nn.Module):
         print(e1.shape, e2.shape, e3.shape, e4.shape, e5.shape)
         atten = self.attention(e5)
         p_text = self.text_decoder(atten, e5)
-        # p_mask = self.mask_decoder(e1, e2, e3, e4, e5, atten)
+        p_mask = self.mask_decoder(e1, e2, e3, e4, e5, atten)
         print("atten: ", atten.shape)
         print("argmax: ", torch.argmax(atten, dim=1).shape)
         # return preds, torch.chunk(atten, self.K, 1)
@@ -253,11 +253,10 @@ if __name__ == "__main__":
         print(outputs.size())
 
     import sys
-    sys.path.append('/workspace/utils')
+    sys.path.append('utils')
     from tools import *
 
     count_parameters(model, inputs_shape)
-    # export2onnx(model, inputs_shape, 'model.onnx')
 
     # import os, glob, random
     # import numpy as np
