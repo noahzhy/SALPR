@@ -31,7 +31,7 @@ def test_onnx_model_speed(model_path, input_shape, warm_up=100, test=1000, force
     print(f'Available devices: {ort.get_device()}')
 
     # Create session with optimized options
-    provider_options = ['CPUExecutionProvider'] if force_cpu else ['CUDAExecutionProvider']
+    provider_options = ['CPUExecutionProvider'] if force_cpu else ort.get_available_providers()
     # check providers
     print(f'Available providers: {provider_options}')
     session = ort.InferenceSession(model_path, options, providers=provider_options)
@@ -62,7 +62,7 @@ def test_onnx_model_speed(model_path, input_shape, warm_up=100, test=1000, force
 
 
 if __name__ == '__main__':
-    model_path = 'onnx/model_sim.onnx'
+    model_path = 'model_sim.onnx'
 
     test_onnx_model_speed(model_path, (1, 1, 32, 96))
 

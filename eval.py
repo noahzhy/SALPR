@@ -22,29 +22,14 @@ eval_freq = cfg['eval_freq']
 bs = cfg['batch_size']
 print(cfg)
 
-<<<<<<< HEAD
-# from dataloader import LPRDataset
-# test_dataset = LPRDataset(**cfg['test'])
-# test_loader = DataLoader(test_dataset, batch_size=bs, shuffle=False)
-
-model = TinyLPR().to(device)
-model.load_state_dict(torch.load('backup/m_size_0.9919.pth', weights_only=True, map_location='cpu'))
-model.eval()
-
-# export model to onnx
-import onnx
-
-inputs_shape = (1, 1, 32, 96)
-dummy_input = torch.randn(inputs_shape).to(device)
-=======
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 model = TinyLPR(log_output=True).to(device)
 model.load_state_dict(torch.load('weights/m_size_0.9919.pth', weights_only=True, map_location=device))
 model.eval()
 
-dummy_input = torch.randn(1, 1, 32, 96).to(device)
->>>>>>> 92b72ff8238da28eca6bda8883633ee12defb2b0
+inputs_shape = (1, 1, 32, 96)
+dummy_input = torch.randn(*inputs_shape).to(device)
 torch.onnx.export(model, dummy_input,
     "model.onnx",
     verbose=False,
@@ -53,7 +38,6 @@ torch.onnx.export(model, dummy_input,
     opset_version=20,
 )
 
-<<<<<<< HEAD
 import sys
 sys.path.append('utils')
 
@@ -61,16 +45,9 @@ from tools import *
 
 count_parameters(model, inputs_shape)
 
-export2onnx(model, inputs_shape, 'tmp_model.onnx')
-simplify_onnx('tmp_model.onnx', 'tmp_model_simplified.onnx')
-=======
-exit(-1)
+simplify_onnx('model.onnx', 'model_sim.onnx')
 
-from dataloader import LPRDataset
-test_dataset = LPRDataset(**cfg['test'])
-test_loader = DataLoader(test_dataset, batch_size=bs, shuffle=False)
-
->>>>>>> 92b72ff8238da28eca6bda8883633ee12defb2b0
+exit()
 
 # random pick one image from test dataset to test
 def test_model(model, image_path):

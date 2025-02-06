@@ -11,6 +11,7 @@ Attention: 2D attention
 
 Thus, the parameters are increased 56.36% and the flops are increased 7.27%.
 
-| Model             | Platform      | FLOPs         | Params    | Inference Time    |
+| Model             | Chip          | Platform      | Params    | Inference Time    |
 | :---:             | :---:         | :---:         | :---:     | :---:             |
-| MobileNetV4-Small | i9-10900K     | 27.33 MFLOPs  | 0.172 M   | 0.46 ms           |
+| MobileNetV4-Small | i9-10900K     | onnx          | 0.172 M   | 0.46 ms           |
+| MobileNetV4-Small | M4            | tflite        | 0.172 M   | 0.58 ms           |
