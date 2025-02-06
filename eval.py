@@ -9,8 +9,9 @@ from PIL import Image
 from tqdm import tqdm
 
 # from model import LPR_model
-from dataloader import LPRDataset
 from new_model.torch_model import TinyLPR
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 # load config
@@ -20,17 +21,19 @@ eval_freq = cfg['eval_freq']
 bs = cfg['batch_size']
 print(cfg)
 
-test_dataset = LPRDataset(**cfg['test'])
-test_loader = DataLoader(test_dataset, batch_size=bs, shuffle=False)
+# from dataloader import LPRDataset
+# test_dataset = LPRDataset(**cfg['test'])
+# test_loader = DataLoader(test_dataset, batch_size=bs, shuffle=False)
 
-model = TinyLPR().cuda()
-model.load_state_dict(torch.load('backup/m_size_0.9919.pth', weights_only=True))
+model = TinyLPR().to(device)
+model.load_state_dict(torch.load('backup/m_size_0.9919.pth', weights_only=True, map_location='cpu'))
 model.eval()
 
 # export model to onnx
 import onnx
 
-dummy_input = torch.randn(1, 1, 32, 96).cuda()
+inputs_shape = (1, 1, 32, 96)
+dummy_input = torch.randn(inputs_shape).to(device)
 torch.onnx.export(model, dummy_input,
     "model.onnx",
     verbose=False,
@@ -38,6 +41,15 @@ torch.onnx.export(model, dummy_input,
     output_names=['output']
 )
 
+import sys
+sys.path.append('utils')
+
+from tools import *
+
+count_parameters(model, inputs_shape)
+
+export2onnx(model, inputs_shape, 'tmp_model.onnx')
+simplify_onnx('tmp_model.onnx', 'tmp_model_simplified.onnx')
 
 # random pick one image from test dataset to test
 def test_model(model, image_path):
