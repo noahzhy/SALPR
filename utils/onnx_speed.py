@@ -62,7 +62,7 @@ def test_onnx_model_speed(model_path, input_shape, warm_up=100, test=1000, force
 
 
 if __name__ == '__main__':
-    model_path = 'model_sim.onnx'
+    model_path = 'test_model.onnx'
 
     test_onnx_model_speed(model_path, (1, 1, 32, 96))
 

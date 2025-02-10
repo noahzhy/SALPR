@@ -56,8 +56,8 @@ def load_and_test_tflite_model(tflite_model_path, input_shape, warmup=100, num_i
 
 if __name__ == "__main__":
     # Example usage
-    model_path = "/Users/haoyu/Downloads/test.tflite"
+    model_path = "models/model.tflite"
     input_shape = (1, 1, 32, 96)  # Modify according to your model's input shape
-    
+
     avg_inference_time = load_and_test_tflite_model(model_path, input_shape)
     print(f"Average inference time: {avg_inference_time:.2f} ms")

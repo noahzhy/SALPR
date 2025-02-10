@@ -8,11 +8,11 @@ def count_parameters(model, input_size=(1, 3, 224, 224)):
     x = torch.randn(input_size)
     macs, params = profile(model, inputs=(x,), verbose=False)
     if macs/1e9 > 1:
-        print('MACs: {} GLOPs'.format(round(macs / 1e9, 4)))
+        print('FLOPs: {} G'.format(round(macs / 1e9, 4)))
     elif macs/1e6 > 1:
-        print('MACs: {} MLOPs'.format(round(macs / 1e6, 4)))
+        print('FLOPs: {} M'.format(round(macs / 1e6, 4)))
     else:
-        print('MACs: {} KLOPs'.format(round(macs / 1e3, 4)))
+        print('FLOPs: {} K'.format(round(macs / 1e3, 4)))
     print('Params: {} M'.format(round(params / 1e6, 4)))
 
 

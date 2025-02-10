@@ -246,11 +246,13 @@ if __name__ == "__main__":
     inputs = torch.randn(inputs_shape)
     outputs = model(inputs)
 
-    if isinstance(outputs, tuple):
-        for i, output in enumerate(outputs):
-            print(f"Stage {i + 1} output size: {output.size()}")
-    else:
-        print(outputs.size())
+    quit()
+
+    # if isinstance(outputs, tuple):
+    #     for i, output in enumerate(outputs):
+    #         print(f"Stage {i + 1} output size: {output.size()}")
+    # else:
+    #     print(outputs.size())
 
     import sys
     sys.path.append('utils')
