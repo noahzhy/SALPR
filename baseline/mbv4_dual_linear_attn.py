@@ -201,6 +201,7 @@ class TinyLPR(nn.Module):
     def forward(self, x):
         _, s2, s3 = self.backbone(x)
         bs, c, h, w = s3.size()
+        # [1, 72, 4, 12]
         # return s3
 
         attn = self.attention(s3)
@@ -218,7 +219,7 @@ class TinyLPR(nn.Module):
 
 
 if __name__ == '__main__':
-    model = TinyLPR()
+    model = TinyLPR(n_feat=72)
     inputs_shape = (1, 1, 32, 96)
     x = torch.randn(inputs_shape)
     y = model(x)

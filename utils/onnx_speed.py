@@ -53,8 +53,7 @@ def test_onnx_model_speed(model_path, input_shape, warm_up=100, test=1000, force
         times.append(perf_counter() - start)
 
     # Calculate statistics
-    # sort the times and remove the first 10% and last 10% of the times
-    times = np.sort(times)[int(test * 0.1):int(test * 0.9)]
+    times = np.sort(times)[int(test * 0.2):int(test * 0.8)]
     average_time = np.mean(times)
     print(f'Average time: {average_time * 1000:.2f} ms')
     print(f'Min time: {min(times)*1000:.2f} ms')
@@ -62,7 +61,7 @@ def test_onnx_model_speed(model_path, input_shape, warm_up=100, test=1000, force
 
 
 if __name__ == '__main__':
-    model_path = 'test_model.onnx'
+    model_path = 'model_sim.onnx'
 
     test_onnx_model_speed(model_path, (1, 1, 32, 96))
 

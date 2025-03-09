@@ -1,19 +1,22 @@
 import torch
-from thop import profile
+from thop import clever_format, profile
 # import torch.onnx as onnx
 import onnx
 
 
 def count_parameters(model, input_size=(1, 3, 224, 224)):
-    x = torch.randn(input_size)
-    macs, params = profile(model, inputs=(x,), verbose=False)
-    if macs/1e9 > 1:
-        print('FLOPs: {} G'.format(round(macs / 1e9, 4)))
-    elif macs/1e6 > 1:
-        print('FLOPs: {} M'.format(round(macs / 1e6, 4)))
-    else:
-        print('FLOPs: {} K'.format(round(macs / 1e3, 4)))
-    print('Params: {} M'.format(round(params / 1e6, 4)))
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = model.to(device)
+    dummy_input = torch.randn(input_size).to(device)
+    flops, params = profile(model, (dummy_input, ), verbose=False)
+    #-------------------------------------------------------------------------------#
+    #   flops * 2 because profile does not consider convolution as two operations.
+    #-------------------------------------------------------------------------------#
+    flops         = flops * 2
+    flops, params = clever_format([flops, params], "%.2f ")
+    print(f'Total GFLOPs: {flops}')
+    print(f'Total params: {params}')
+    return flops, params
 
 
 def export2onnx(model, input_size=(1, 3, 224, 224), model_name="mobilenetv4_small.onnx"):
@@ -24,7 +27,7 @@ def export2onnx(model, input_size=(1, 3, 224, 224), model_name="mobilenetv4_smal
         verbose=False,
         input_names=["input"],
         output_names=["output"],
-        # opset_version=11,
+        opset_version=20,
     )
 
 
