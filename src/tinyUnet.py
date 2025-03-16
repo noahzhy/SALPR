@@ -61,12 +61,10 @@ class CMRF(nn.Module):
         """Forward pass through CMRF Module."""
         x_residual = x
         x          = self.pwconv1(x)
-
         x          = [x[:, 0::2, :, :], x[:, 1::2, :, :]]
         x.extend(m(x[-1]) for m in self.m)
-        x[0]       = x[0] +  x[1] 
+        x[0]       = x[0] +  x[1]
         x.pop(1)
-        
         y          = torch.cat(x, dim=1) 
         y          = self.pwconv2(y)
         return x_residual + y if self.add else y

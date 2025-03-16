@@ -5,64 +5,42 @@ from mobilev4 import *
 from tinyUnet import UNetDecoder
 
 
-class Encoder(nn.Module):
-    def __init__(self):
-        super(Encoder, self).__init__()
-        self.cnn = mobilenetv4_medium()
-
-    def forward(self, inputs):
-        return self.cnn(inputs)
-
-
 class Attention(nn.Module):
-    def __init__(self, nc, K=8):
+    def __init__(self, channels, temporal, **kwargs):
         super(Attention, self).__init__()
-        self.K = K
-
-        channels = [256, 128]
-        self.conv_pool_1 = nn.Sequential(
-            nn.Conv2d(nc, channels[0], 3, 1, 1),
-            nn.BatchNorm2d(channels[0]),
-            nn.ReLU(True),
-            nn.MaxPool2d((2, 2)),
+        self.temporal = temporal
+        self.cba = nn.Sequential(
+            nn.LazyConv2d(channels, 3, 2, 1, bias=False),
+            nn.LazyBatchNorm2d(),
+            nn.ReLU(inplace=True),
         )
-
-        self.conv_pool_2 = nn.Sequential(
-            nn.Conv2d(channels[0], channels[1], 3, 1, 1),
-            nn.BatchNorm2d(channels[1]),
-            nn.ReLU(True),
-            nn.MaxPool2d((2, 2)),
+        self.ll = nn.Sequential(
+            nn.LazyLinear(12),
+            nn.LazyLinear(12),
         )
-
-        self.cnn_1_1 = nn.Conv2d(channels[0], 64, 1, 1, 0)
-
-        self.deconv1 = nn.ConvTranspose2d(channels[1], 64, kernel_size=3, stride=2, padding=1, dilation=1, output_padding=1)
-        self.bn1     = nn.BatchNorm2d(64)
-
-        self.deconv2 = nn.ConvTranspose2d(64, self.K, kernel_size=3, stride=2, padding=1, dilation=1, output_padding=1)
-        self.bn2     = nn.BatchNorm2d(self.K)
-
-        self.relu    = nn.ReLU(inplace=True)
-        self.softmax = nn.Softmax(dim=1)
-
-        self.fc1 = nn.LazyLinear(48)
-        self.fc2 = nn.LazyLinear(48)
+        self.up0 = nn.Sequential(
+            nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True),
+            nn.LazyConv2d(channels, 1, 1, 0),
+            nn.ReLU(inplace=True),
+        )
+        self.bn = nn.BatchNorm2d(channels)
+        self.up1 = nn.Sequential(
+            nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True),
+            nn.LazyConv2d(temporal, 1, 1, 0),
+            nn.Softmax(dim=1)
+        )
 
     def forward(self, inputs):
-        x0 = self.conv_pool_1(inputs)
-        x1 = self.conv_pool_2(x0)
+        x = self.cba(inputs)
+        bs, c, h, w = x.size()
 
-        N, C, H, W = x1.shape
-        fc_x = x1.view(N, C, H*W)
+        x = x.view(bs, c, -1)
+        x = self.ll(x)
+        x = x.view(bs, c, h, w)
 
-        # fc1 = nn.LazyLinear(H*W)
-        # fc2 = nn.LazyLinear(H*W)
-        fc_atten = self.fc2((self.fc1(fc_x))).reshape(N, C, H, W)
-
-        score = self.relu(self.deconv1(fc_atten))
-        score = self.bn1(score + self.cnn_1_1(x0))
-        atten = self.softmax(self.bn2(self.deconv2(score)))
-        return atten
+        x = self.up0(x) + inputs
+        x = self.up1(self.bn(x))
+        return x
 
 
 class ClsDecoder(nn.Module):
@@ -100,31 +78,38 @@ class SegDecoder(nn.Module):
 
 
 class LPR_model(nn.Module):
-    def __init__(self, nclass, K=8):
+    def __init__(self, nclass, seq_len=8):
         super(LPR_model, self).__init__()
-        self.K = K
-        self.encoder = Encoder()
-        self.attention = Attention(nc=256, K=K)
+        self.encoder = mobilenetv4_medium()
+        self.attention = Attention(channels=256, temporal=seq_len)
         self.cls_decoder = ClsDecoder(nclass)
-        self.seg_decoder = SegDecoder(K)
+        self.seg_decoder = SegDecoder(seq_len)
 
     def forward(self, inputs):
         e1, _, e3, e4, e5 = self.encoder(inputs)
+        print("e5 size: ", e5.size())
 
         atten = self.attention(e5)
-        # atten_list = torch.chunk(atten, self.K, 1)
 
-        preds = self.cls_decoder(atten, e5)
-        seg = self.seg_decoder(e5, e4, e3, e1)
-        return preds, seg
+        cls_head = self.cls_decoder(atten, e4)
+        seg_head = self.seg_decoder(e5, e4, e3, e1)
+        return cls_head, seg_head
 
 
 if __name__ == "__main__":
     model = LPR_model(68, 8)
-    inputs = torch.randn(1, 1, 32, 96)
-    inputs = torch.randn(1, 1, 128, 384)
-    preds, seg = model(inputs)
+    input_shape = (1, 1, 32, 96)
+    inputs = torch.randn(input_shape)
+    cls_head, seg_head = model(inputs)
 
-    print(preds.shape, seg.shape)
+    import sys
+    sys.path.append("D:/projects/SALPR/utils")
+    print(sys.path)
+    from tools import count_parameters
+
+    count_parameters(model, input_size=input_shape)
+
+    print("cls_head size: ", cls_head.size())
+    print("seg_head size: ", seg_head.size())
     # export as onnx
     torch.onnx.export(model, inputs, "lpr.onnx", verbose=False, opset_version=20)

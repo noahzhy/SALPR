@@ -219,7 +219,7 @@ class TinyLPR(nn.Module):
 
 
 if __name__ == '__main__':
-    model = TinyLPR(n_feat=72)
+    model = TinyLPR()
     inputs_shape = (1, 1, 32, 96)
     x = torch.randn(inputs_shape)
     y = model(x)
@@ -232,6 +232,6 @@ if __name__ == '__main__':
 
     count_parameters(model, inputs_shape)
 
-    # model.load_state_dict(torch.load('backup/m_size_0.9919.pth', weights_only=True, map_location='cpu'))
-    # export2onnx(model, inputs_shape, 'tmp_model.onnx')
+    model.load_state_dict(torch.load('weights/m_size_0.9919.pth', weights_only=True, map_location='cpu'), strict=False)
+    export2onnx(model, inputs_shape, 'model.onnx')
     # simplify_onnx('tmp_model.onnx', 'tmp_model_simplified.onnx')

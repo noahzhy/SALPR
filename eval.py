@@ -10,7 +10,7 @@ from PIL import Image
 from tqdm import tqdm
 
 # from model import LPR_model
-from new_model.torch_model import TinyLPR
+from baseline.mbv4_dual_linear_attn import TinyLPR
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
