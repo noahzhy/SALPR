@@ -8,15 +8,16 @@ def count_parameters(model, input_size=(1, 3, 224, 224)):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
     dummy_input = torch.randn(input_size).to(device)
-    flops, params = profile(model, (dummy_input, ), verbose=False)
+    macs, params = profile(model, (dummy_input, ), verbose=False)
     #-------------------------------------------------------------------------------#
     #   flops * 2 because profile does not consider convolution as two operations.
     #-------------------------------------------------------------------------------#
-    flops         = flops * 2
-    flops, params = clever_format([flops, params], "%.2f ")
+    flops         = macs * 2
+    macs, flops, params = clever_format([macs, flops, params], "%.2f ")
+    print(f'Total MACs:   {macs}')
     print(f'Total GFLOPs: {flops}')
     print(f'Total params: {params}')
-    return flops, params
+    return macs, flops, params
 
 
 def export2onnx(model, input_size=(1, 3, 224, 224), model_name="mobilenetv4_small.onnx"):

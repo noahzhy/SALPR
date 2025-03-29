@@ -68,11 +68,10 @@ class LPRDataset(Dataset):
         return self.tensor2gray(image), labels
 
 
-dataset = LPRDataset(image_dir='datasets/lpr/images/val', data_aug=True)
-dataloader = DataLoader(dataset, batch_size=2, shuffle=True)
-
-
 if __name__ == '__main__':
+    dataset = LPRDataset(image_dir='datasets/lpr/images/val', data_aug=True)
+    dataloader = DataLoader(dataset, batch_size=2, shuffle=True)
+
     from matplotlib import pyplot as plt
 
     # Example usage

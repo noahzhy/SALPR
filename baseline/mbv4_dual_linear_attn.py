@@ -205,6 +205,7 @@ class TinyLPR(nn.Module):
         # return s3
 
         attn = self.attention(s3)
+        atten_list = torch.chunk(attn, self.T, 1)
         attn = attn.reshape(bs, self.T, -1)
 
         shortcut = self.conv1(s2)
@@ -213,17 +214,17 @@ class TinyLPR(nn.Module):
         out = self.out(attn_out)
 
         if self.log_output:
-            return nn.Softmax(dim=2)(out)
+            return nn.Softmax(dim=2)(out), atten_list
 
         return out
 
 
 if __name__ == '__main__':
-    model = TinyLPR()
+    model = TinyLPR(log_output=True)
     inputs_shape = (1, 1, 32, 96)
     x = torch.randn(inputs_shape)
     y = model(x)
-    print(y.size())
+    # print(y.size())
 
     import sys
     sys.path.append('utils')
