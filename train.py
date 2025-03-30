@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader, Dataset
 from PIL import Image, ImageDraw, ImageFont
 from tqdm import tqdm
 
-from new_model.torch_model import TinyLPR
+from baseline.mbv4_dual_linear_attn import TinyLPR
 # from model import LPR_model
 from dataloader import LPRDataset
 
@@ -27,12 +27,11 @@ print(cfg)
 torch.manual_seed(seed)
 torch.cuda.manual_seed(seed)
 
-train_loader = DataLoader(LPRDataset(**cfg['train']), batch_size=bs, shuffle=True)
-val_loader = DataLoader(LPRDataset(**cfg['val']), batch_size=bs, shuffle=False)
-
-# model = LPR_model(1, 68, 96, 32, 8).cuda()
 model = TinyLPR().cuda()
 model.load_state_dict(torch.load(cfg['checkpoint_path'], weights_only=True), strict=False)
+
+train_loader = DataLoader(LPRDataset(**cfg['train']), batch_size=bs, shuffle=True)
+val_loader = DataLoader(LPRDataset(**cfg['val']), batch_size=bs, shuffle=False)
 
 optimizer = optim.NAdam(model.parameters(), lr=cfg['lr'])
 
@@ -41,10 +40,9 @@ def eval_model(model, data, labels):
 
     def eval_fn(preds, labels):
         preds = torch.argmax(preds, dim=-1)
-        acc = torch.mean(
+        return torch.mean(
             torch.all(preds == labels, dim=-1).float()
         )
-        return acc
 
     with torch.no_grad():
         outputs = model(data)
