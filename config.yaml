@@ -1,7 +1,7 @@
 model_name: 'tinyLPR'
-# lr: 1.0e-3
-lr: 3.0e-4
-batch_size: &bs 128
+lr: 1.0e-3
+# lr: 3.0e-4
+batch_size: &bs 256
 epochs: 100
 eval_freq: 5
 
@@ -13,7 +13,8 @@ img_size: [32, 96]
 input_shape: [32, 96, 1]
 seed: 0
 
-checkpoint_path: "backup/m_size_0.9915.pth"
+checkpoint_path: ""
+# checkpoint_path: "checkpoints/model_95_acc_0.9829.pth"
 
 # data config
 train:

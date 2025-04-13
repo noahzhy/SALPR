@@ -99,7 +99,7 @@ class UniversalInvertedBottleneck(nn.Module):
 
 
 class MobileNetV4(nn.Module):
-    def __init__(self, cin=1,cout=128):
+    def __init__(self, cin=1, cout=128):
         super(MobileNetV4, self).__init__()
 
         block_specs = [
@@ -120,19 +120,19 @@ class MobileNetV4(nn.Module):
         ]
 
         self.stage1 = nn.Sequential(
-            ConvBN(cin, 24, 3, 1),
-            ConvBN(24, 32, 3, 2),
+            ConvBN(cin, 16, 3, 1),
+            ConvBN(16, 32, 3, 2),
             ConvBN(32, 24, 1, 1),
         )
 
         self.stage2 = nn.Sequential(
-            UniversalInvertedBottleneck(24, 32, 2.0, 5, 5, 2),
-            UniversalInvertedBottleneck(32, 32, 2.0, 0, 3, 1),
-            UniversalInvertedBottleneck(32, 48, 3.0, 3, 0, 1),
+            UniversalInvertedBottleneck(24, 48, 3.0, 5, 5, 2),
+            UniversalInvertedBottleneck(48, 48, 2.0, 0, 3, 1),
+            UniversalInvertedBottleneck(48, 32, 3.0, 3, 0, 1),
         )
 
         self.stage3 = nn.Sequential(
-            UniversalInvertedBottleneck(48, 64, 3.0, 3, 3, 2),
+            UniversalInvertedBottleneck(32, 64, 3.0, 3, 3, 2),
             UniversalInvertedBottleneck(64, 64, 2.0, 0, 3, 1),
             ConvBN(64, cout, 1, 1),
         )
@@ -149,37 +149,38 @@ class Attention(nn.Module):
         super(Attention, self).__init__()
         self.temporal = temporal
         self.cba = nn.Sequential(
-            nn.Conv2d(channels, channels, 3, 2, 1, bias=False),
-            nn.BatchNorm2d(channels),
+            nn.LazyConv2d(channels, 3, 2, 1, bias=False),
+            nn.LazyBatchNorm2d(channels),
             nn.ReLU(inplace=True),
         )
-        self.ll = nn.Sequential(
-            nn.Linear(12, 8),
-            nn.ReLU(inplace=True),
-            nn.Linear(8, 12),
+        self.mlp = nn.Sequential(
+            nn.LazyLinear(12),
+            nn.ReLU6(inplace=True),
+            nn.LazyLinear(12),
+            nn.Hardtanh(min_val=0, max_val=1),
         )
         self.up0 = nn.Sequential(
-            nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True),
-            nn.Conv2d(channels, channels, 1, 1, 0),
+            nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
+            nn.LazyConv2d(channels, 1, 1, 0),
+            nn.LazyBatchNorm2d(channels),
             nn.ReLU(inplace=True),
         )
         self.up1 = nn.Sequential(
-            nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True),
-            nn.Conv2d(channels, temporal, 1, 1, 0),
+            nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
+            nn.LazyConv2d(temporal, 1, 1, 0),
             nn.Softmax(dim=1)
         )
-        self.bn = nn.BatchNorm2d(channels)
 
     def forward(self, inputs):
         x = self.cba(inputs)
         bs, c, h, w = x.size()
 
         x = x.view(bs, c, -1)
-        x = self.ll(x)
+        x = self.mlp(x)
         x = x.view(bs, c, h, w)
 
         x = self.up0(x) + inputs
-        x = self.up1(self.bn(x))
+        x = self.up1(x)
         return x
 
 
@@ -193,25 +194,25 @@ class TinyLPR(nn.Module):
 
         self.backbone = MobileNetV4(1, n_feat)
         self.attention = Attention(n_feat, T)
-        self.out = nn.Linear(n_feat, n_class)
+        self.fc = nn.Linear(n_feat, n_class)
 
         self.conv1 = nn.Sequential(
-            nn.Conv2d(48, n_feat, 1, 1, 0),
+            nn.Conv2d(32, n_feat, 1, 1, 0),
         )
 
     def forward(self, x):
         _, s2, s3 = self.backbone(x)
         bs, c, h, w = s3.size()
-        # return s3
 
         attn = self.attention(s3)
         attn = attn.reshape(bs, self.T, -1)
 
         shortcut = self.conv1(s2)
         shortcut = shortcut.reshape(bs, c, -1).permute(0, 2, 1)
-        attn_out = torch.bmm(attn, shortcut).view(bs, self.T, -1)
-        out = self.out(attn_out)
-        # out = shortcut
+        attn = torch.matmul(attn, shortcut)
+
+        out = attn.view(bs, self.T, -1)
+        out = self.fc(out)
 
         if self.log_output:
             return nn.Softmax(dim=2)(out)
@@ -228,11 +229,9 @@ if __name__ == '__main__':
 
     import sys
     sys.path.append('utils')
-
     from tools import *
-
     count_parameters(model, inputs_shape)
 
-    # model.load_state_dict(torch.load('backup/m_size_0.9919.pth', weights_only=True, map_location='cpu'))
+    # model.load_state_dict(torch.load('weights/m_size_0.9919.pth', weights_only=True, map_location='cpu'), strict=False)
     export2onnx(model, inputs_shape, 'test_model.onnx')
     # simplify_onnx('tmp_model.onnx', 'tmp_model_simplified.onnx')
