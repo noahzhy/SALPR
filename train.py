@@ -10,8 +10,7 @@ from torch.utils.data import DataLoader, Dataset
 from PIL import Image, ImageDraw, ImageFont
 from tqdm import tqdm
 
-from baseline.mbv4_dual_linear_attn import TinyLPR
-# from model import LPR_model
+from baseline.tiny_mbv4 import TinyLPR
 from dataloader import LPRDataset
 
 
@@ -27,8 +26,14 @@ print(cfg)
 torch.manual_seed(seed)
 torch.cuda.manual_seed(seed)
 
+train_loader = DataLoader(LPRDataset(**cfg['train']), batch_size=bs, shuffle=True)
+val_loader = DataLoader(LPRDataset(**cfg['val']), batch_size=bs, shuffle=False)
+
+# model = LPR_model(1, 68, 96, 32, 8).cuda() for baseline raw
 model = TinyLPR().cuda()
-model.load_state_dict(torch.load(cfg['checkpoint_path'], weights_only=True), strict=False)
+if cfg['checkpoint_path'] != '':
+    print(f"\33[1;32mLoading checkpoint from {cfg['checkpoint_path']}\33[0m")
+    model.load_state_dict(torch.load(cfg['checkpoint_path'], weights_only=True), strict=False)
 
 train_loader = DataLoader(LPRDataset(**cfg['train']), batch_size=bs, shuffle=True)
 val_loader = DataLoader(LPRDataset(**cfg['val']), batch_size=bs, shuffle=False)
