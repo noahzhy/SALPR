@@ -128,12 +128,12 @@ class MobileNetV4(nn.Module):
         self.stage2 = nn.Sequential(
             UniversalInvertedBottleneck(24, 48, 3.0, 5, 5, 2),
             UniversalInvertedBottleneck(48, 48, 2.0, 0, 3, 1),
-            UniversalInvertedBottleneck(48, 48, 4.0, 3, 0, 1),
+            UniversalInvertedBottleneck(48, 32, 3.0, 3, 0, 1),
         )
 
         self.stage3 = nn.Sequential(
-            UniversalInvertedBottleneck(48, 64, 4.0, 3, 3, 2),
-            UniversalInvertedBottleneck(64, 64, 3.0, 0, 3, 1),
+            UniversalInvertedBottleneck(32, 64, 3.0, 3, 3, 2),
+            UniversalInvertedBottleneck(64, 64, 2.0, 0, 3, 1),
             ConvBN(64, cout, 1, 1),
         )
 
@@ -197,7 +197,7 @@ class TinyLPR(nn.Module):
         self.fc = nn.Linear(n_feat, n_class)
 
         self.conv1 = nn.Sequential(
-            nn.Conv2d(48, n_feat, 1, 1, 0),
+            nn.Conv2d(32, n_feat, 1, 1, 0),
         )
 
     def forward(self, x):
