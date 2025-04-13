@@ -1,10 +1,14 @@
-checkpoints/*
-backup/*
-datasets/*
-data/*.zip
 .DS_Store
-*.pyc
 tmp_*
+*.pyc
 *.log
+*.onnx
+*.jpeg
+*.jpg
+*.png
 
+data/*.zip
+checkpoints/*
+datasets/*
 images/*
+backup/*

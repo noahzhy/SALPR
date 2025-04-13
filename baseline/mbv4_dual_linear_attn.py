@@ -201,9 +201,11 @@ class TinyLPR(nn.Module):
     def forward(self, x):
         _, s2, s3 = self.backbone(x)
         bs, c, h, w = s3.size()
+        # [1, 72, 4, 12]
         # return s3
 
         attn = self.attention(s3)
+        atten_list = torch.chunk(attn, self.T, 1)
         attn = attn.reshape(bs, self.T, -1)
 
         shortcut = self.conv1(s2)
@@ -212,17 +214,17 @@ class TinyLPR(nn.Module):
         out = self.out(attn_out)
 
         if self.log_output:
-            return nn.Softmax(dim=2)(out)
+            return nn.Softmax(dim=2)(out), atten_list
 
         return out
 
 
 if __name__ == '__main__':
-    model = TinyLPR()
+    model = TinyLPR(log_output=True)
     inputs_shape = (1, 1, 32, 96)
     x = torch.randn(inputs_shape)
     y = model(x)
-    print(y.size())
+    # print(y.size())
 
     import sys
     sys.path.append('utils')
@@ -231,6 +233,6 @@ if __name__ == '__main__':
 
     count_parameters(model, inputs_shape)
 
-    # model.load_state_dict(torch.load('backup/m_size_0.9919.pth', weights_only=True, map_location='cpu'))
-    # export2onnx(model, inputs_shape, 'tmp_model.onnx')
+    model.load_state_dict(torch.load('weights/m_size_0.9919.pth', weights_only=True, map_location='cpu'), strict=False)
+    export2onnx(model, inputs_shape, 'model.onnx')
     # simplify_onnx('tmp_model.onnx', 'tmp_model_simplified.onnx')

@@ -35,6 +35,9 @@ if cfg['checkpoint_path'] != '':
     print(f"\33[1;32mLoading checkpoint from {cfg['checkpoint_path']}\33[0m")
     model.load_state_dict(torch.load(cfg['checkpoint_path'], weights_only=True), strict=False)
 
+train_loader = DataLoader(LPRDataset(**cfg['train']), batch_size=bs, shuffle=True)
+val_loader = DataLoader(LPRDataset(**cfg['val']), batch_size=bs, shuffle=False)
+
 optimizer = optim.NAdam(model.parameters(), lr=cfg['lr'])
 
 # fn to eval pred and labels
@@ -42,10 +45,9 @@ def eval_model(model, data, labels):
 
     def eval_fn(preds, labels):
         preds = torch.argmax(preds, dim=-1)
-        acc = torch.mean(
+        return torch.mean(
             torch.all(preds == labels, dim=-1).float()
         )
-        return acc
 
     with torch.no_grad():
         outputs = model(data)

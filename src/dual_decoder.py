@@ -4,15 +4,6 @@ import torch.nn.functional as F
 from mobilev4 import *
 
 
-# def dot_product(seg, cls):
-#     b, n, h, w = seg.shape
-#     seg = seg.view(b, n, -1)
-#     cls = cls.unsqueeze(-1)  # Add an extra dimension for broadcasting
-#     final = torch.einsum("bik,bi->bik", seg, cls)
-#     final = final.view(b, n, h, w)
-#     return final
-
-
 # conv2d bn relu
 def ConvBN(in_channels, out_channels, kernel_size, stride, padding=0):
     return nn.Sequential(
@@ -242,7 +233,7 @@ class LPR_model(nn.Module):
 
 if __name__ == "__main__":
     model = LPR_model(3, 68, 128, 384, 8)
-    inputs_shape = (1, 3, 128, 384)
+    inputs_shape = (1, 1, 128, 384)
     inputs = torch.randn(inputs_shape)
     outputs = model(inputs)
 
@@ -260,32 +251,3 @@ if __name__ == "__main__":
 
     count_parameters(model, inputs_shape)
 
-    # import os, glob, random
-    # import numpy as np
-    # from PIL import Image
-    # import matplotlib.pyplot as plt
-
-    # img_path = random.choice(glob.glob('images/*.jpg'))
-    # img = Image.open(img_path).resize((96, 32)).convert('L')
-    # img = np.array(img).reshape(1, 1, 32, 96).astype(np.float32) / 255.0
-
-    # model.load_state_dict(torch.load('self_pix/model_85_acc_0.9954.pth', weights_only=True, map_location='cpu'), strict=False)
-    # preds, atten_list = model(torch.from_numpy(img))
-    # preds = torch.argmax(preds, dim=2).squeeze().detach().numpy()
-
-    # fig, axs = plt.subplots(1, 9, figsize=(16, 2))
-    # axs[0].imshow(img.squeeze(), cmap='gray')
-    # axs[0].axis('off')
-
-    # for i, atten in enumerate(atten_list):
-    #     idx = i + 1
-    #     atten = atten.squeeze().detach().numpy()
-    #     atten = (atten - atten.min()) / (atten.max() - atten.min())
-    #     atten = (atten * 255).astype(np.uint8)
-    #     img = Image.fromarray(atten).resize((96, 32), Image.NEAREST)
-    #     axs[idx].set_title(preds[i])
-    #     axs[idx].imshow(img, cmap='gray')
-    #     axs[idx].axis('off')
-
-    # plt.show()
-    # print(img_path, preds)
