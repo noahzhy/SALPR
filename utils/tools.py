@@ -4,8 +4,12 @@ from thop import clever_format, profile
 import onnx
 
 
-def count_parameters(model, input_size=(1, 3, 224, 224)):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+def count_parameters(model, input_size=(1, 3, 224, 224), cpu=True):
+    if cpu:
+        device = torch.device('cpu')
+    else:
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
     model = model.to(device)
     dummy_input = torch.randn(input_size).to(device)
     macs, params = profile(model, (dummy_input, ), verbose=False)
@@ -21,8 +25,10 @@ def count_parameters(model, input_size=(1, 3, 224, 224)):
 
 
 def export2onnx(model, input_size=(1, 3, 224, 224), model_name="mobilenetv4_small.onnx"):
+    device = torch.device('cpu')
+    model.to(device)
     model.eval()
-    x = torch.randn(input_size)
+    x = torch.randn(input_size).to(device)
     torch.onnx.export(model, x,
         model_name,
         verbose=False,
@@ -30,6 +36,7 @@ def export2onnx(model, input_size=(1, 3, 224, 224), model_name="mobilenetv4_smal
         output_names=["output"],
         opset_version=20,
     )
+    print(f'Model exported to {model_name}')
 
 
 def simplify_onnx(original_model, simplified_model):
