@@ -26,16 +26,11 @@ def inference_onnx_model(model_path, img_path):
 def test_onnx_model_speed(model_path, input_shape, warm_up=100, test=1000, force_cpu=True):
     # Set ONNX Runtime options for better performance
     options = ort.SessionOptions()
-    options.intra_op_num_threads = os.cpu_count()
-    options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-
-    # ort devices check
-    print(f'Available devices: {ort.get_device()}')
 
     # Create session with optimized options
     provider_options = ['CPUExecutionProvider'] if force_cpu else ort.get_available_providers()
     # check providers
-    print(f'Available providers: {provider_options}')
+    print(f'providers: {provider_options}')
     session = ort.InferenceSession(model_path, options, providers=provider_options)
     
     # Pre-allocate input data array
@@ -65,7 +60,7 @@ def test_onnx_model_speed(model_path, input_shape, warm_up=100, test=1000, force
 if __name__ == '__main__':
     model_path = 'onnx/model_sim.onnx'
     model_path = 'model.onnx'
-    # model_path = 'test_model.onnx'
+    model_path = 'test_model_simplified.onnx'
 
     test_onnx_model_speed(model_path, (1, 1, 32, 96))
 

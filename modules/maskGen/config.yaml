@@ -1,0 +1,32 @@
+model_name: 'maskGen'
+lr: 2.0e-3
+# lr: 3.0e-4
+batch_size: 8
+epochs: 100
+warmup: 5
+eval_freq: 1
+
+num_classes: &nc 2
+
+img_size: [128, 256]
+input_shape: [128, 256, 3]
+seed: 0
+
+checkpoint_path: ""
+# checkpoint_path: "checkpoints/model_95_acc_0.9829.pth"
+
+# data config
+train:
+  image_dir: /Users/haoyu/Documents/datasets/lpr/train_dataset
+  image_size: [128, 256]
+  data_aug: True
+
+val:
+  image_dir: /Users/haoyu/Documents/datasets/lpr/test_dataset
+  image_size: [128, 256]
+  data_aug: False
+
+test:
+  image_dir: /Users/haoyu/Documents/datasets/lpr/test_dataset
+  image_size: [128, 256]
+  data_aug: False
